@@ -1,0 +1,121 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
+void *mallocs[100] = {NULL};
+size_t mindex = 0;
+
+typedef struct CLListNode {
+    int value;
+    struct CLListNode* next;
+} node;
+
+typedef struct CLList {
+    node* head;
+    int size;
+} list;
+
+node *new_node(int value, node *next) {
+    node *a = malloc(sizeof(node));
+    a->value = value;
+    a->next = next;
+    mallocs[mindex++] = a;
+    return a;
+}
+
+list* new_list(node* head) {
+    list* l = malloc(sizeof(list));
+    l->head = head;
+    l->size = (head ? 1 : 0);
+    if (l->head) l->head->next = l->head;
+    mallocs[mindex++] = l;
+    return l;
+}
+
+void print(list *l) {
+    int i = 0;
+    for(node *cursor = l->head; i < l->size; cursor = cursor->next, ++i) printf("%d ", cursor->value);
+    puts(" ");
+}
+
+void insert(list* l, int pos, int val) {
+    if (pos == 0) {
+        if(l->size == 0) {
+            l->head = new_node(val, NULL);
+            l->head->next = l->head;
+        }
+        else {
+            node* a = new_node(val, l->head);
+            l->head = a;
+        }
+    }
+    else {
+        node* s = l->head;
+        int i = 0;
+        for(; i < pos - 1; i++) s = s->next;
+        node* n = new_node(val, s->next);
+        s->next = n;
+    }
+    l->size++;
+}
+
+void delete(list* l, int pos) {
+    if (pos == 0) {
+        node* a = l->head;
+        int i = 0;
+        for(; i < pos; i++) a = a->next;
+        a->next = l->head->next;
+        l->head = l->head->next;
+    }
+    else {
+        node* s = l->head;
+        for(int i = 0; i < pos - 1; ++i) s = s->next;
+        s->next = s->next->next;
+    }
+    l->size--;
+}
+
+void dealloc() {
+    for(int i = 0; i < mindex; ++i) free(mallocs[i]);
+}
+
+int main(){
+    list* l = new_list(NULL);
+    char s[100], is[100], dump[100];
+    int a, b;
+    while (true) {
+        printf(">>> ");
+        fgets(s, 99, stdin);
+        sscanf(s, "%s", is);
+        if (!strcmp(is, "append")) {
+            sscanf(s, "%s %d", dump, &a);
+            if (!l->head) insert(l, 0, a);
+            else insert(l, l->size, a);
+        }
+        else if (!strcmp(is, "delete")) {
+            sscanf(s, "%s %d", dump, &a);
+            if (a < 0) a = l->size + a;
+            if (a < 0 || a > l->size) fputs("Index out of bounds.\n", stderr);
+            else delete(l, a);
+        }
+        else if (!strcmp(is, "insert")) {
+            sscanf(s, "%s %d %d", dump, &b, &a);
+            if (a < 0) a = l->size + a + 1;
+            if (a < 0 || a > l->size) fputs("Index out of bounds.\n", stderr);
+            else insert(l, a, b);
+        }
+        else if (!strcmp(is, "pop")) {
+            if (l->size) delete(l, l->size - 1);
+            else fputs("Empty list.\n", stderr);
+        }
+        else if (!strcmp(is, "print") || !strcmp(is, "delete")) {
+            if (l->head) print(l);
+            else fputs("Empty list.\n", stderr);
+        }
+        else if (!strcmp(is, "exit")) break;
+        else if (!strcmp(is, "size")) printf("%d\n", l->size);
+    }
+
+    dealloc();
+}
